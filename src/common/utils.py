@@ -19,7 +19,7 @@ def read_excel_data(file_path):
 
         product_list = []
 
-        max_iterations = 3  # Set the limit for the loop
+        max_iterations = 1  # Set the limit for the loop
         count = 0  # Initialize a counter
 
         for sku, images in objects_dict.items():
