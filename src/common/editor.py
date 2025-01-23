@@ -1,3 +1,4 @@
+import random
 import time
 import moviepy.editor as mp
 import requests
@@ -5,24 +6,35 @@ from moviepy.audio.AudioClip import CompositeAudioClip
 from moviepy.editor import AudioFileClip, vfx, afx
 from PIL import Image
 from gtts import gTTS
+from pydub import AudioSegment
 
 from src.Enum.FilePath import FilePath
-from src.common.effects import zoom_in_effect, swipe_in_effect
+from src.common.effects import zoom_in_effect, swipe_in_effect, zoom_in_effect_with_spin
 
 
 def create_slide(product):
     image_files = product.images
     size = (1920, 1080)
     slides = []
+
     for n, url in enumerate(image_files):
         if resize_image(url, size):
             time.sleep(1)
             slides.append(
-                mp.ImageClip(FilePath.IMAGE_OUTPUT.value).set_fps(24).set_duration(5)
+                mp.ImageClip(FilePath.IMAGE_OUTPUT.value).set_fps(24).set_duration(6)
             )
             if n > 1:
-                slides[n] = swipe_in_effect(slides[n], 'left').subclip(1, 5)
-                break
+                choice = random.randint(1, 4)
+                if choice == 1:
+                    slides[n] = zoom_in_effect(slides[n], 0.03).fx(vfx.fadein, 1).fx(vfx.fadeout, 1)
+                if choice == 2:
+                    slides[n] = zoom_in_effect_with_spin(slides[n], 0.03, 5).fx(vfx.fadein, 1).fx(vfx.fadeout, 1)
+                if choice == 3:
+                    slides[n] = swipe_in_effect(slides[n], 'left').subclip(1.5, 6)
+                if choice == 4:
+                    slides[n] = swipe_in_effect(slides[n], 'right').subclip(1.5, 6)
+
+                continue
             slides[n] = zoom_in_effect(slides[n], 0.03).fx(vfx.fadein, 1).fx(vfx.fadeout, 1)
         else:
             continue
@@ -34,7 +46,7 @@ def create_slide(product):
     text = "EAST WEST FURNITURE - 3-PIECE KITCHEN TABLE SET Enhance your kitchen's allure with a sophisticated 3-Piece kitchen set, comprising a rectangular dining table and 2 finely crafted dining chairs. This collection epitomizes contemporary elegance, featuring a sleek, high-gloss finish on both the table and chairs. Meticulously crafted with premium materials, it seamlessly harmonizes with various interior decors. The centerpiece, a modern dining table, combines a Cherry wood tabletop with a refined Buttermilk finish, ensuring both timeless aesthetics and enduring durability. Its versatile design effortlessly complements diverse decor styles, making it a perennial addition to your living space. The dining chairs' Buttermilk-finished wooden legs introduce a touch of modern sophistication, enhancing style and comfort. Constructed from top-grade Asian rubber wood, this dining set guarantees unmatched durability, free from heat-treated wood, plywood, veneer, or laminates. The set's versatile style effortlessly complements any decor, promising lasting appeal. The spacious wooden seats of the dining chairs elevate the kitchen's aesthetics and ensure exceptional comfort. Featuring a versatile backrest design suitable for various decor styles, from rustic to modern, these chairs offer a comfortable dining experience for all users. Assembly is straightforward with provided instructions, and our primary concern is your satisfaction. Buy with confidence and elevate your kitchen's allure professionally and stylishly."
 
     voice_generator(text)
-    
+
     overlay_music()
     audio_clip = mp.AudioFileClip(FilePath.FINAL_AUDIO.value)
 
@@ -79,7 +91,7 @@ def overlay_music():
 
 
 def resize_image(image_url, target_size):
-    target_height = int(target_size[1] * 0.8)
+    target_height = int(target_size[1] * 0.9)
 
     response = requests.get(image_url, stream=True)
 
@@ -123,6 +135,13 @@ def voice_generator(text):
                    slow=False)
         tts_audio_file = FilePath.VOICE_OUTPUT.value
         tts.save(tts_audio_file)
+
+        # Adjust the audio speed using pydub
+        audio = AudioSegment.from_file(tts_audio_file)
+        faster_audio = audio.speedup(playback_speed=1.5)
+
+        faster_audio.export(FilePath.VOICE_OUTPUT.value, format="mp3")
+
 
     except Exception as e:
         print(f"An error occurred: {e}")
