@@ -1,6 +1,5 @@
 import math
 
-import numpy
 import numpy as np
 from PIL import Image
 
@@ -28,9 +27,47 @@ def zoom_in_effect(clip, zoom_ratio=0.04):
             x, y, new_size[0] - x, new_size[1] - y
         ]).resize(base_size, Image.LANCZOS)
 
-        result = numpy.array(img)
+        result = np.array(img)
         img.close()
 
+        return result
+
+    return clip.fl(effect)
+
+
+def zoom_in_effect_with_spin(clip, zoom_ratio=0.04, spin_speed=0):
+    def effect(get_frame, t):
+        img = Image.fromarray(get_frame(t))
+        base_size = img.size
+
+        # Calculate new zoomed size
+        new_size = [
+            math.ceil(base_size[0] * (1 + (zoom_ratio * t))),
+            math.ceil(base_size[1] * (1 + (zoom_ratio * t)))
+        ]
+
+        # Ensure dimensions are even
+        new_size[0] += new_size[0] % 2
+        new_size[1] += new_size[1] % 2
+
+        # Resize the image to the new zoomed size
+        img = img.resize(new_size, Image.LANCZOS)
+
+        # Calculate rotation angle (rotate rightward with spin speed)
+        rotation_angle = spin_speed * t  # Slow rightward spin
+
+        # Rotate the image (expand=True ensures it doesn't get cropped during rotation)
+        img = img.rotate(rotation_angle, resample=Image.BICUBIC, expand=True)
+
+        # Calculate cropping dimensions to maintain the original frame size
+        x = math.ceil((img.size[0] - base_size[0]) / 2)
+        y = math.ceil((img.size[1] - base_size[1]) / 2)
+
+        # Crop to the original size
+        img = img.crop([x, y, x + base_size[0], y + base_size[1]])
+
+        result = np.array(img)
+        img.close()
         return result
 
     return clip.fl(effect)
